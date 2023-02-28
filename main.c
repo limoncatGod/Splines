@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 //-----some needed const-----
-#define SIZE 50
+#define SIZE 256
 #define SIZEFICT 256
 #define MAXCONST -1000000000000
 #define MINCONST 1000000000000
@@ -26,6 +27,7 @@ typedef struct{
     PARAMETRPOINT* mass_points;
     POINT* mass_si;
     int len;
+    char path[SIZE];
 } SPLINE;
 
 
@@ -56,53 +58,77 @@ int count_string_file(char name_of_file[]){
 }
 
 
-//---find intersection of array of x betweeen 2 splines-----
-POINT intersection(PARAMETRPOINT* first_mass_x, int first_len, PARAMETRPOINT* second_mass_x, int second_len){
-    double first_min, first_max, second_min, second_max;
-    POINT intersect;
-    first_min = MINCONST;
-    second_min = MINCONST;
-    first_max = MAXCONST;
-    first_max = MAXCONST;
-    for(int i = 0; i < first_len; i++){
-        first_min = (first_min <= first_mass_x[i].point.x) ? first_min : first_mass_x[i].point.x;
-        first_max = (first_max >= first_mass_x[i].point.x) ? first_max : first_mass_x[i].point.x;
+//---find intersection of arrays betweeen 2 splines-----
+POINT* intersection(SPLINE first_spline, SPLINE second_spline){
+    POINT first_x = {MINCONST, MAXCONST};
+    POINT second_x = {MINCONST, MAXCONST};
+    POINT first_y = {MINCONST, MAXCONST};
+    POINT second_y = {MINCONST, MAXCONST};
+    POINT* intersect = malloc(2*sizeof(POINT));
+    for(int i = 0; i < first_spline.len; i++){
+        first_x.x = (first_x.x <= first_spline.mass_points[i].point.x) ? first_x.x : first_spline.mass_points[i].point.x;
+        first_x.y = (first_x.y >= first_spline.mass_points[i].point.x) ? first_x.y : first_spline.mass_points[i].point.x;
+        first_y.x = (first_y.x <= first_spline.mass_points[i].point.y) ? first_y.x : first_spline.mass_points[i].point.y;
+        first_y.y = (first_y.y >= first_spline.mass_points[i].point.y) ? first_y.y : first_spline.mass_points[i].point.y;
     }
-    for(int i = 0; i < second_len; i++){
-        second_min = (second_min <= second_mass_x[i].point.x) ? first_min : second_mass_x[i].point.x;
-        second_max = (second_max >= second_mass_x[i].point.x) ? first_max : second_mass_x[i].point.x;
+    for(int i = 0; i < second_spline.len; i++){
+        second_x.x = (second_x.x <= second_spline.mass_points[i].point.x) ? second_x.x : second_spline.mass_points[i].point.x;
+        second_x.y = (second_x.y >= second_spline.mass_points[i].point.x) ? second_x.y : second_spline.mass_points[i].point.x;
+        second_y.x = (second_y.x <= second_spline.mass_points[i].point.y) ? second_y.x : second_spline.mass_points[i].point.y;
+        second_y.y = (second_y.y >= second_spline.mass_points[i].point.y) ? second_y.y : second_spline.mass_points[i].point.y;
     }
-    if(first_min >= second_min){
-        if(first_max <= second_max){
-            intersect.x = first_min;
-            intersect.y = first_max;
-            return intersect;
+    if(first_x.x >= second_x.x){
+        if(first_x.y <= second_x.y){
+            intersect[0].x = first_x.x;
+            intersect[0].y = first_x.y;
         } else {
-            intersect.x = first_min;
-            intersect.y = second_max;
-            if(first_min > second_max){
-                intersect.x = MINCONST;
-                intersect.y = MINCONST;
-                return intersect;
+            intersect[0].x = first_x.x;
+            intersect[0].y = second_x.y;
+            if(first_x.x > second_x.y){
+                intersect[0].x = MINCONST;
+                intersect[0].y = MINCONST;
             }
-            return intersect;
         }
     } else {
-        if(first_max <= second_max){
-            intersect.x = second_min;
-            intersect.y = first_max;
-            if(second_min > first_max){
-                intersect.x = MINCONST;
-                intersect.y = MINCONST;
-                return intersect;
+        if(first_x.y <= second_x.y){
+            intersect[0].x = second_x.x;
+            intersect[0].y = first_x.y;
+            if(second_x.x > first_x.y){
+                intersect[0].x = MINCONST;
+                intersect[0].y = MINCONST;
             }
-            return intersect;
         } else {
-            intersect.x = second_min;
-            intersect.y = second_max;
-            return intersect;
+            intersect[0].x = second_x.x;
+            intersect[0].y = second_x.y;
         }
     }
+    if(first_y.x >= second_y.x){
+        if(first_y.y <= second_y.y){
+            intersect[1].x = first_y.x;
+            intersect[1].y = first_y.y;
+        } else {
+            intersect[1].x = first_y.x;
+            intersect[1].y = second_y.y;
+            if(first_y.x > second_y.y){
+                intersect[1].x = MINCONST;
+                intersect[1].y = MINCONST;
+            }
+        }
+    } else {
+        if(first_y.y <= second_y.y){
+            intersect[1].x = second_y.x;
+            intersect[1].y = first_y.y;
+            if(second_y.x > first_y.y){
+                intersect[1].x = MINCONST;
+                intersect[1].y = MINCONST;
+            }
+        } else {
+            intersect[1].x = second_y.x;
+            intersect[1].y = second_y.y;
+        }
+    }
+
+    return intersect;
 }
 
 
@@ -186,7 +212,7 @@ POINT* matrix_solution(double** a, POINT* b, int len_a){
 }
 
 //---forming a spline----
-SPLINE form_spline(PARAMETRPOINT* mass_points, int len){
+SPLINE form_spline(PARAMETRPOINT* mass_points, int len, char path[]){
     SPLINE spline;
     double** mass_diagonal = matrix_of_si(mass_points, len);
     POINT* mass_p = matrix_of_p(mass_points, len);
@@ -194,6 +220,7 @@ SPLINE form_spline(PARAMETRPOINT* mass_points, int len){
     spline.mass_points = mass_points;
     spline.mass_si = matrix_si;
     spline.len = len;
+    strcpy(spline.path, path);
     return spline;
 }
 
@@ -201,10 +228,10 @@ SPLINE create_spline(){
     int len;
     char name[SIZE];
     printf("Print path to file\n");
-    scanf("%s", &name);
+    scanf("%s", name);
     len = count_string_file(name);
     PARAMETRPOINT* mass_points = read_file(name, len);
-    return form_spline(mass_points, len);
+    return form_spline(mass_points, len, name);
 }
 
 
@@ -226,26 +253,22 @@ POINT func_spline(SPLINE spline, double t){
 
 
 //---find intersection point----
-POINT find_point(POINT intersection_x, SPLINE first_spline, SPLINE second_spline){
+POINT find_point(POINT* intersection_x, SPLINE first_spline, SPLINE second_spline){
     double point_i = 0;
     double point_i_2 = 0;
-    POINT point;
-    point.x = 0;
-    point.y = 0;
-    POINT point_2;
-    point_2.x = 0;
-    point_2.y = 0;
+    POINT point = {0, 0};
+    POINT point_2 = {0, 0};
     POINT ans;
     while(point_i<(double)first_spline.len){
         point_i_2 = 0;
         point = func_spline(first_spline, point_i);
-        if(point.x<intersection_x.x || point.x>intersection_x.y){
+        if(point.x<intersection_x[0].x || point.x>intersection_x[0].y || point.y<intersection_x[1].x || point.y>intersection_x[1].y){
             point_i += STEP;
             continue;
         }
         while(point_i_2<(double)second_spline.len){
             point_2 = func_spline(second_spline, point_i_2);
-            if(point_2.x<intersection_x.x || point_2.x>intersection_x.y){
+            if(point_2.x<intersection_x[0].x || point_2.x>intersection_x[0].y  || point_2.y<intersection_x[1].x || point_2.y>intersection_x[1].y){
                 point_i_2 += STEP;
                 continue;
             }
@@ -290,20 +313,48 @@ double find_min_distance(SPLINE first_spline, SPLINE second_spline){
 
 
 int main() {
-    SPLINE first_spline = create_spline();
-    SPLINE second_spline = create_spline();
-
-    POINT intersection_x = intersection(first_spline.mass_points, first_spline.len, second_spline.mass_points, second_spline.len);
-    POINT point_of_intersection = find_point(intersection_x, first_spline, second_spline);
-    printf("\nINTERSECTION OF X: [%lf, %lf]\n", intersection_x.x, intersection_x.y);
-    printf("\nPOINT OF INTERSECTION: {%lf; %lf}\n", point_of_intersection.x, point_of_intersection.y);
-    printf("\nDISTANCE: %lf\n", find_min_distance(first_spline, second_spline));
-    /*double point_i = 0;
-    POINT current_point;
-    while(point_i < 6){
-        current_point = func_spline(first_spline, point_i);
-        printf("(%lf; %lf) ", current_point.x, current_point.y);
-        point_i = point_i + 0.1;
-    }*/
+    int num = 0;
+    printf("Print number of splines\n");
+    scanf("%d", &num);
+    SPLINE* mass_splines = malloc(num*sizeof(SPLINE));
+    for(int i = 0; i < num; i++){
+        printf("-----%d Spline------\n", i);
+        mass_splines[i] = create_spline();
+        printf("\n");
+    }
+    char command[SIZE] = "START";
+    while(strcmp(command, "QUIT") != 0){
+        printf("\nChoose command to execute:\n 1) PRINT num_of_spline  - print array of points of splines\n 2) LIST  - print list of splines\n 3) INTERSECTION num_of_first_spline num_of_second_spline  -  find point of intersection between 2 splines \n 4) DISTANCE num_first_spline num_second_spline  -  find distance between 2 splines\n 5) QUIT  - quit from program\nPrint command:\n");
+        scanf("%s", command);
+        if(strcmp(command, "PRINT") == 0){
+            int num_of_spline = 0;
+            scanf("%d", &num_of_spline);
+            double point_i = 0;
+            POINT current_point;
+            while(point_i < (mass_splines[num_of_spline].len - 1)){
+                current_point = func_spline(mass_splines[num_of_spline], point_i);
+                printf("(%lf; %lf) ", current_point.x, current_point.y);
+                point_i = point_i + 0.1;
+            }
+            printf("\n");
+        } else if(strcmp(command, "LIST") == 0){
+            for(int i = 0; i < num; i++){
+                printf("%d:  %s\n", i, mass_splines[i].path);
+            }
+        } else if(strcmp(command, "INTERSECTION") == 0){
+            int num_of_spline_1 = 0;
+            int num_of_spline_2 = 0;
+            scanf("%d %d", &num_of_spline_1, &num_of_spline_2);
+            POINT* intersection_splines = intersection(mass_splines[num_of_spline_1], mass_splines[num_of_spline_2]);
+            POINT point_of_intersection = find_point(intersection_splines, mass_splines[num_of_spline_1], mass_splines[num_of_spline_2]);
+            printf("\nINTERSECTION OF X: [%lf, %lf]   INTERSECTION OF Y: [%lf, %lf]\n", intersection_splines[0].x, intersection_splines[0].y, intersection_splines[1].x, intersection_splines[1].y);
+            printf("\nPOINT OF INTERSECTION: {%lf; %lf}\n", point_of_intersection.x, point_of_intersection.y);
+        } else if(strcmp(command, "DISTANCE") == 0){
+            int num_of_spline_1 = 0;
+            int num_of_spline_2 = 0;
+            scanf("%d %d", &num_of_spline_1, &num_of_spline_2);
+            printf("\nDISTANCE: %lf\n", find_min_distance(mass_splines[num_of_spline_1], mass_splines[num_of_spline_2]));
+        }
+    }
     return 0;
 }
